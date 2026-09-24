@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>آلة حاسبة متقدمة</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --calc-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --text-secondary: #a0a0a0;
+            --btn-bg: #2d2d2d;
+            --btn-hover: #3d3d3d;
+            --btn-text: #ffffff;
+            --accent-color: #ff9500;
+            --accent-hover: #ffaa33;
+            --func-bg: #404040;
+            --func-hover: #505050;
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f0f2f5;
+            --calc-bg: #ffffff;
+            --text-color: #333333;
+            --text-secondary: #666666;
+            --btn-bg: #f8f9fa;
+            --btn-hover: #e9ecef;
+            --btn-text: #333333;
+            --accent-color: #007aff;
+            --accent-hover: #0056b3;
+            --func-bg: #e2e8f0;
+            --func-hover: #cbd5e1;
+            --shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 850px;
+            background-color: var(--calc-bg);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            position: relative;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        @media (min-width: 450px) {
+            .container {
+                border-radius: 24px;
+                height: 90vh;
+            }
+        }
+
+        /* رأس التطبيق والشاشات */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .theme-toggle, .history-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .theme-toggle:hover, .history-toggle:hover {
+            color: var(--text-color);
+            background-color: var(--btn-hover);
+        }
+
+        .display {
+            padding: 10px 20px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            word-break: break-all;
+            word-wrap: break-word;
+            min-height: 140px;
+            border-bottom: 1px solid var(--btn-hover);
+        }
+
+        .previous-operand {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            min-height: 24px;
+        }
+
+        .current-operand {
+            color: var(--text-color);
+            font-size: 2.5rem;
+            font-weight: 500;
+        }
+
+        /* لوحة المفاتيح */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: 1fr;
+            gap: 10px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        button.btn {
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: none;
+            border-radius: 16px;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.15s, transform 0.1s;
+        }
+
+        button.btn:active {
+            transform: scale(0.95);
+        }
+
+        button.btn.function {
+            background-color: var(--func-bg);
+            color: var(--text-color);
+            font-size: 1.1rem;
+        }
+
+        button.btn.function:hover {
+            background-color: var(--func-hover);
+        }
+
+        button.btn.operator {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            font-size: 1.4rem;
+        }
+
+        button.btn.operator:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.btn:not(.operator):not(.function) {
+            background-color: var(--btn-bg);
+        }
+
+        button.btn:not(.operator):not(.function):hover {
+            background-color: var(--btn-hover);
+        }
+
+        /* نافذة السجل المنبثقة */
+        .history-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--calc-bg);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .history-panel.active {
+            transform: translateY(0);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--btn-hover);
+        }
+
+        .history-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .close-history, .clear-history {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .history-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .history-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--btn-bg);
+            cursor: pointer;
+        }
+
+        .history-calc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .history-res {
+            color: var(--text-color);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .empty-history {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div class="container">
+        <!-- رأس التطبيق -->
+        <div class="header">
+            <button class="history-toggle" id="historyBtn" title="السجل">
+                🕒
+            </button>
+            <button class="theme-toggle" id="themeBtn" title="تغيير المظهر">
+                ☀️
+            </button>
+        </div>
+
+        <!-- الشاشة -->
+        <div class="display">
+            <div class="previous-operand" id="previousOperand"></div>
+            <div class="current-operand" id="currentOperand">0</div>
+        </div>
+
+        <!-- لوحة المفاتيح -->
+        <div class="keypad">
+            <button class="btn function" data-action="clear">AC</button>
+            <button class="btn function" data-action="delete">⌫</button>
+            <button class="btn function" data-action="percent">%</button>
+            <button class="btn operator" data-action="divide">÷</button>
+
+            <button class="btn function" data-action="sin">sin</button>
+            <button class="btn function" data-action="cos">cos</button>
+            <button class="btn function" data-action="tan">tan</button>
+            <button class="btn operator" data-action="multiply">×</button>
+
+            <button class="btn function" data-action="sqrt">√</button>
+            <button class="btn function" data-action="power">x²</button>
+            <button class="btn function" data-action="pi">π</button>
+            <button class="btn operator" data-action="subtract">-</button>
+
+            <button class="btn" data-number="7">7</button>
+            <button class="btn" data-number="8">8</button>
+            <button class="btn" data-number="9">9</button>
+            <button class="btn operator" data-action="add">+</button>
+
+            <button class="btn" data-number="4">4</button>
+            <button class="btn" data-number="5">5</button>
+            <button class="btn" data-number="6">6</button>
+            <button class="btn function" data-action="bracket">(</button>
+
+            <button class="btn" data-number="1">1</button>
+            <button class="btn" data-number="2">2</button>
+            <button class="btn" data-number="3">3</button>
+            <button class="btn function" data-action="bracket">)</button>
+
+            <button class="btn" data-number="0">0</button>
+            <button class="btn" data-action="decimal">.</button>
+            <button class="btn operator" data-action="calculate" style="grid-column: span 2; background-color: var(--accent-color);">=</button>
+        </div>
+
+        <!-- لوحة السجل -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-header">
+                <button class="clear-history" id="clearHistoryBtn">مسح السجل</button>
+                <div class="history-title">سجل العمليات</div>
+                <button class="close-history" id="closeHistoryBtn">إغلاق</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-history">لا توجد عمليات سابقة</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Calculator {
+            constructor(previousOperandTextElement, currentOperandTextElement) {
+                this.previousOperandTextElement = previousOperandTextElement;
+                this.currentOperandTextElement = currentOperandTextElement;
+                this.clear();
+                this.history = JSON.parse(localStorage.getItem('calc_history')) || [];
+            }
+
+            clear() {
+                this.currentOperand = '0';
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.resetScreen = false;
+            }
+
+            delete() {
+                if (this.resetScreen) return;
+                if (this.currentOperand.length === 1 || (this.currentOperand.length === 2 && this.currentOperand.startsWith('-'))) {
+                    this.currentOperand = '0';
+                } else {
+                    this.currentOperand = this.currentOperand.toString().slice(0, -1);
+                }
+            }
+
+            appendNumber(number) {
+                if (this.currentOperand === '0' || this.resetScreen) {
+                    this.currentOperand = number.toString();
+                    this.resetScreen = false;
+                } else {
+                    this.currentOperand = this.currentOperand.toString() + number.toString();
+                }
+            }
+
+            appendDecimal() {
+                if (this.resetScreen) {
+                    this.currentOperand = '0.';
+                    this.resetScreen = false;
+                    return;
+                }
+                const lastNum = this.currentOperand.split(/[\+\-\×\÷]/).pop();
+                if (lastNum.includes('.')) return;
+                this.currentOperand = this.currentOperand.toString() + '.';
+            }
+
+            appendOperator(operation) {
+                if (this.resetScreen) this.resetScreen = false;
+                const lastChar = this.currentOperand.slice(-1);
+                if (['+', '-', '×', '÷'].includes(lastChar)) {
+                    this.currentOperand = this.currentOperand.slice(0, -1) + operation;
+                    return;
+                }
+                this.currentOperand += operation;
+            }
+
+            appendConstant(constant) {
+                if (this.resetScreen) {
+                    this.currentOperand = constant.toString();
+                    this.resetScreen = false;
+                } else {
+                    if (this.currentOperand === '0') {
+                        this.currentOperand = constant.toString();
+                    } else {
+                        this.currentOperand += constant.toString();
+                    }
+                }
+            }
+
+            appendFunction(func) {
+                let currentNum = parseFloat(this.currentOperand);
+                if (isNaN(currentNum)) return;
+                let result;
+                let funcString = '';
+
+                switch (func) {
+                    case 'sin':
+                        result = Math.sin(currentNum * Math.PI / 180); // بالدرجات
+                        funcString = `sin(${currentNum})`;
+                        break;
+                    case 'cos':
+                        result = Math.cos(currentNum * Math.PI / 180);
+                        funcString = `cos(${currentNum})`;
+                        break;
+                    case 'tan':
+                        result = Math.tan(currentNum * Math.PI / 180);
+                        funcString = `tan(${currentNum})`;
+                        break;
+                    case 'sqrt':
+                        if (currentNum < 0) return;
+                        result = Math.sqrt(currentNum);
+                        funcString = `√(${currentNum})`;
+                        break;
+                    case 'power':
+                        result = Math.pow(currentNum, 2);
+                        funcString = `(${currentNum})²`;
+                        break;
+                    case 'percent':
+                        result = currentNum / 100;
+                        funcString = `${currentNum}%`;
+                        break;
+                    default:
+                        return;
+                }
+
+                result = parseFloat(result.toFixed(8));
+                this.addToHistory(funcString, result);
+                this.currentOperand = result.toString();
+                this.resetScreen = true;
+            }
+
+            compute() {
+                let computation;
+                let expression = this.currentOperand
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/');
+
+                try {
+                    // استخدام Function آمن نسبياً للحسابات المتقدمة
+                    computation = Function('"use strict";return (' + expression + ')')();
+                    if (computation === undefined || isNaN(computation) || !isFinite(computation)) {
+                        throw "خطأ";
+                    }
+                    computation = parseFloat(computation.toFixed(8));
+                    
+                    this.addToHistory(this.currentOperand, computation);
+                    this.previousOperand = this.currentOperand + ' =';
+                    this.currentOperand = computation.toString();
+                    this.resetScreen = true;
+                } catch (e) {
+                    this.currentOperand = 'خطأ';
+                    this.resetScreen = true;
+                }
+            }
+
+            addToHistory(calc, res) {
+                const historyItem = { calc, res };
+                this.history.unshift(historyItem);
+                if (this.history.length > 20) this.history.pop();
+                localStorage.setItem('calc_history', JSON.stringify(this.history));
+                updateHistoryUI();
+            }
+
+            clearHistory() {
+                this.history = [];
+                localStorage.removeItem('calc_history');
+                updateHistoryUI();
+            }
+
+            updateDisplay() {
+                this.currentOperandTextElement.innerText = this.currentOperand;
+                this.previousOperandTextElement.innerText = this.previousOperand;
+            }
+        }
+
+        // تهيئة العناصر
+        const previousOperandTextElement = document.getElementById('previousOperand');
+        const currentOperandTextElement = document.getElementById('currentOperand');
+        const themeBtn = document.getElementById('themeBtn');
+        const historyBtn = document.getElementById('historyBtn');
+        const historyPanel = document.getElementById('historyPanel');
+        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const historyList = document.getElementById('historyList');
+
+        const calculator = new Calculator(previousOperandTextElement, currentOperandTextElement);
+
+        // ربط أزرار الأرقام
+        document.querySelectorAll('[data-number]').button = document.querySelectorAll('[data-number]').forEach(button => {
+            button.addEventListener('click', () => {
+                calculator.appendNumber(button.getAttribute('data-number'));
+                calculator.updateDisplay();
+            });
+        });
+
+        // ربط أزرار العمليات
+        document.querySelectorAll('[data-action]').forEach(button => {
+            button.addEventListener('click', () => {
+                const action = button.getAttribute('data-action');
+                
+                switch(action) {
+                    case 'clear':
+                        calculator.clear();
+                        break;
+                    case 'delete':
+                        calculator.delete();
+                        break;
+                    case 'decimal':
+                        calculator.appendDecimal();
+                        break;
+                    case 'add':
+                        calculator.appendOperator('+');
+                        break;
+                    case 'subtract':
+                        calculator.appendOperator('-');
+                        break;
+                    case 'multiply':
+                        calculator.appendOperator('×');
+                        break;
+                    case 'divide':
+                        calculator.appendOperator('÷');
+                        break;
+                    case 'calculate':
+                        calculator.compute();
+                        break;
+                    case 'pi':
+                        calculator.appendConstant(Math.PI.toFixed(4));
+                        break;
+                    case 'bracket':
+                        calculator.appendNumber(button.innerText);
+                        break;
+                    case 'sin':
+                    case 'cos':
+                    case 'tan':
+                    case 'sqrt':
+                    case 'power':
+                    case 'percent':
+                        calculator.appendFunction(action);
+                        break;
+                }
+                calculator.updateDisplay();
+            });
+        });
+
+        // إدارة السجل
+        function updateHistoryUI() {
+            if (calculator.history.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">لا توجد عمليات سابقة</div>';
+                return;
+            }
+            historyList.innerHTML = '';
+            calculator.history.forEach(item => {
+                const div = document.createElement('div');
+                div.classList.add('history-item');
+                div.innerHTML = `
+                    <div class="history-calc">${item.calc}</div>
+                    <div class="history-res">${item.res}</div>
+                `;
+                div.addEventListener('click', () => {
+                    calculator.currentOperand = item.res.toString();
+                    historyPanel.classList.remove('active');
+                    calculator.updateDisplay();
+                });
+                historyList.appendChild(div);
+            });
+        }
+
+        historyBtn.addEventListener('click', () => {
+            updateHistoryUI();
+            historyPanel.classList.add('active');
+        });
+
+        closeHistoryBtn.addEventListener('click', () => {
+            historyPanel.classList.remove('active');
+        });
+
+        clearHistoryBtn.addEventListener('click', () => {
+            calculator.clearHistory();
+        });
+
+        // إدارة المظهر (الوضع الليلي والنهاري)
+        const body = document.body;
+        themeBtn.addEventListener('click', () => {
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                themeBtn.innerText = '🌙';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeBtn.innerText = '☀️';
+            }
+        });
+
+        // دعم لوحة المفاتيح الخارجية
+        window.addEventListener('keydown', e => {
+            if (e.key >= 0 && e.key <= 9) {
+                calculator.appendNumber(e.key);
+            } else if (e.key === '.') {
+                calculator.appendDecimal();
+            } else if (e.key === '+') {
+                calculator.appendOperator('+');
+            } else if (e.key === '-') {
+                calculator.appendOperator('-');
+            } else if (e.key === '*') {
+                calculator.appendOperator('×');
+            } else if (e.key === '/') {
+                calculator.appendOperator('÷');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculator.compute();
+            } else if (e.key === 'Backspace') {
+                calculator.delete();
+            } else if (e.key === 'Escape') {
+                calculator.clear();
+            }
+            calculator.updateDisplay();
+        });
+
+        // تهيئة أولية
+        calculator.updateDisplay();
+    </script>
+</body>
+</html>
